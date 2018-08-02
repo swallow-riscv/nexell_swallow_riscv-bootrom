@@ -17,6 +17,7 @@
  */
 
 #include <nx_uart.h>
+#include <nx_debug.h>
 #include <nx_lib.h>
 #include <nx_bootheader.h>
 #include <nx_chip_iomux.h>
@@ -74,7 +75,6 @@ int DebugInit(void)
     return 1;
 }
 
-//#define SIMUL
 void DebugPutch(char ch)
 {
     const unsigned int TX_FIFO_FULL = 1 << 1;

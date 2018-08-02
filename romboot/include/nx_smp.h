@@ -3,7 +3,7 @@
 
 // The maximum number of HARTs this code supports
 #ifndef MAX_HARTS
-#define MAX_HARTS 32
+#define MAX_HARTS 2
 #endif
 #define CLINT_END_HART_IPI CLINT_CTRL_ADDR + (MAX_HARTS*4)
 #define CLINT1_END_HART_IPI CLINT1_CTRL_ADDR + (MAX_HARTS*4)
@@ -31,13 +31,39 @@ hart0_entry:
  *    smp_resume(reg1, reg2)
  *    ... multi-threaded work ...
  */
+  /* li t0, 0x20948888             ;\ */
+  /* csrw mtvec, t0                ;\ */
+  
+  /* li t1, 0x1808                 ;\ */
+  /* csrw mstatus, t1              ;\ */
+
+// clinttest
+/* #define smp_pause(reg1, reg2)	 \ */
+/*   li reg2, 0x8			;\ */
+/*   csrw mie, reg2		;\ */
+/*   li t0, 0x20948888             ;\ */
+/*   csrw mtvec, t0                ;\ */
+/*   li   reg1, NONSMP_HART	;\ */
+/*   csrr reg2, mhartid		;\ */
+/*   bne  reg1, reg2, 42f */
 
 #define smp_pause(reg1, reg2)	 \
   li reg2, 0x8			;\
   csrw mie, reg2		;\
   li   reg1, NONSMP_HART	;\
   csrr reg2, mhartid		;\
-  bne  reg1, reg2, 42f
+  beq  reg1, reg2, 40f          ;\
+  li    a0, _AC(0x40007000,UL)  ;\
+  csrw  mtvec, a0               ;\
+  csrwi mip, 0                  ;\
+  csrwi mstatus, 8              ;\
+  csrwi mie, 8                  ;\
+  csrr  reg1, mideleg           ;\
+  li    reg2, _AC(0xfffffff7,UL);\
+  and   reg1, reg1, reg2        ;\
+  csrw  mideleg, reg1           ;\
+  wfi    			;\
+40:                             ;\
 
 #ifdef CLINT1_CTRL_ADDR
 // If a second CLINT exists, then make sure we:

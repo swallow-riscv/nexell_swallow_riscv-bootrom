@@ -2,15 +2,31 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <nx_qemu_printf.h>
+#include <nx_qemu_sim_printf.h>
 
-static inline void _kputs(const char *s)
+#ifdef SOC_SIM
+void kputc(char c)
 {
-	char c;
-	for (; (c = *s) != '\0'; s++)
-		kputc(c);
+    volatile unsigned char *reg = (unsigned char*)PHY_BASEADDR_DUMMY_MODULE;
+    *reg = (unsigned char)c;
+}
+void _kputs(const char *s)
+#else
+static inline void _kputs(const char *s)
+#endif
+{
+    char c;
+    unsigned int count = 0;
+    for (; (c = *s) != '\0'; s++) {
+	kputc(c);
+        count++;
+        if (count > MAX_MESSAGE_LEN) {
+            return ;
+        }
+    }
 }
 
+#ifndef SOC_SIM
 void kputs(const char *s)
 {
   //	_kputs(s);
@@ -21,25 +37,26 @@ void kputs(const char *s)
 	kputc('\r');
 	kputc('\n');
 }
+#endif
 
 void _dprintf(const char *fmt, ...)
 {
 	va_list vl;
-	bool is_format, is_long, is_char;
+	int is_format, is_long, is_char;
 	char c;
 
 	va_start(vl, fmt);
-	is_format = false;
-	is_long = false;
-	is_char = false;
+	is_format = 0;
+	is_long = 0;
+	is_char = 0;
 	while ((c = *fmt++) != '\0') {
 		if (is_format) {
 			switch (c) {
 			case 'l':
-				is_long = true;
+				is_long = 1;
 				continue;
 			case 'h':
-				is_char = true;
+				is_char = 1;
 				continue;
 			case 'x': {
 				unsigned long n;
@@ -65,11 +82,11 @@ void _dprintf(const char *fmt, ...)
 				kputc(va_arg(vl, int));
 				break;
 			}
-			is_format = false;
-			is_long = false;
-			is_char = false;
+			is_format = 0;
+			is_long = 0;
+			is_char = 0;
 		} else if (c == '%') {
-			is_format = true;
+			is_format = 1;
 		} else {
 			kputc(c);
 		}

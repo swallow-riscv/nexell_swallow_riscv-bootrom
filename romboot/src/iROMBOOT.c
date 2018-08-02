@@ -20,61 +20,106 @@
 #include <nx_swallow.h>
 #include <nx_bootheader.h>
 #include <nx_clock.h>
+#include <nx_debug.h>
 #include <iSDBOOT.h>
+#include <iSPIBOOT.h>
 
-#ifdef QEMU_RISCV
-#include <nx_qemu_printf.h>
+#if defined(QEMU_RISCV) || defined(SOC_SIM)
+#include <nx_qemu_sim_printf.h>
 #else
 #include <nx_swallow_printf.h>
 #endif
 
-struct nx_bootmm *const pbm = (struct nx_bootmm * const)BASEADDR_SRAM;
+void __riscv_synch_thread(void) {
+    __asm__ __volatile__ ("fence" : : : "memory");
+}
+
+static unsigned int getBootMode(void);
+
 //------------------------------------------------------------------------------
-int romboot(int bootmode)
+int romboot(void)
 {
-    int option = bootmode;
+    int result = 0;
+    unsigned int option = getBootMode();
+
+#ifdef DEBUG
+    _dprintf("ROMBOOT Start\n");
+    _dprintf("<<bootrom>>romboot start with option = 0x%x\n",option);
+#endif
+
 #ifndef QEMU_RISCV
     nxSetClockInit();
 
     do {
-        int Result = 0;
         switch (option) {
-            /* case XIPBOOT: */
-            /* 	break; */
         case SDBOOT:	// iSDHCBOOT (SD/MMC/eSD/eMMC)
-            Result = iSDBOOT(option);
+#ifdef DEBUG
+            _dprintf("SDBOOT mode\n");
+#endif    
+            result = iSDBOOT(option);
             break;
-        default:
-            _dprintf("no support boot mode(%x)\r\n", option);
+        case SPIBOOT:
+#ifdef DEBUG
+            _dprintf("SPIBOOT mode\n");
+#endif    
+            result = iSPIBOOT();
+            break;
+        default: //default bootmode is sdcard
+            result = iSDBOOT(option);
+            //            _dprintf("no support boot mode(%x)\r\n", option);
             break;
         }
 
-        if (Result)
-            break;
-
-        _dprintf("update boot\r\n");
-        Result = iSDBOOT(option);
-
-        if (Result)
+        if (result)
             break;
 
     } while (0);
+
 #else
-    unsigned int result;
-    struct nx_bootinfo *pbi = (struct nx_bootinfo *)BASEADDR_SRAM;
 
     nxSetClockInit();
-    _dprintf("<<bootrom>> option %s = 0x%x\n", __func__, option); 
-    if (option != 0) {
-        _dprintf("<<bootrom>> iSDBOOT go\n");            
-        result = iSDBOOT(option);
 
+    if (option != 0) {
+        result = iSDBOOT(option);
     }
-    else
+#ifdef DEBUG    
+    else {
         _dprintf("<<bootrom>> boot option is strange!\n");
-        
-    __asm__ __volatile__ ("fence.i" : : : "memory");
+    }
+#endif       
 #endif
 
-    return 1;
+    __riscv_synch_thread();
+
+#ifdef DEBUG
+    _dprintf(">> sdboot result = 0x%x <<\n",result);
+#endif
+    
+    if (result) {
+        struct nx_bootinfo *pbi = (struct nx_bootinfo *)BASEADDR_SRAM;
+#ifdef DEBUG
+        _dprintf(">> Launch to 0x%x\n", pbi->StartAddr);
+#endif
+        return pbi->StartAddr; //0x40000200
+    }
+
+    while(1);
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+static unsigned int getBootMode(void)
+{
+    volatile unsigned int* pSysConReg = (unsigned int*)PHY_BASEADDR_SYS_CON0_MODULE;
+
+    unsigned int oneReg = *pSysConReg+0;
+    unsigned int bootMode = (oneReg & 0x00000020) >> 5;
+#ifdef DEBUG
+    if (bootMode == 0) {
+        _dprintf("SDMMC Boot Mode\n");
+    } else {
+        _dprintf("SPI Boot Mode\n");
+    }
+#endif
+    return bootMode;
 }

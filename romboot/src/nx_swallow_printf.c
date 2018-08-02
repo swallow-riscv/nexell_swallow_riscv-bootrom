@@ -25,8 +25,9 @@ void printchar(char **str, int c)
 	if (str) {
 		**str = c;
 		++(*str);
-	} else
-		(void)nx_putchar((char)c);
+	} else{
+            (void)nx_putchar((char)c);
+        }
 }
 
 #define PAD_RIGHT 1
@@ -184,8 +185,7 @@ int print(char **out, const char *format, va_list args)
 
 int _dprintf(const char *format, ...)
 {
-	va_list args;
-	va_start(args, format);
-
-        return print(0, format, args);
+    va_list args;
+    va_start(args, format);
+    return print(0, format, args);
 }

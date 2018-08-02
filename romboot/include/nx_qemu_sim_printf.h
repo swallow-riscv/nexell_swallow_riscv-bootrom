@@ -2,7 +2,16 @@
 #ifndef _KPRINTF_H
 #define _KPRINTF_H
 
-#include <nx_swallow.h>
+#ifdef SOC_SIM
+
+#define PHY_BASEADDR_DUMMY_MODULE (0x20A00000)
+#define MAX_MESSAGE_LEN (128)
+extern void _kputs(const char *s);
+extern void kputc(char c);
+#else
+
+#include "nx_swallow.h"
+#include "nx_uart.h"
 #include <stdint.h>
 
 #define REG32(p, i)	((p)[(i) >> 2])
@@ -36,6 +45,8 @@ static inline void kputc(char c)
 }
 
 extern void kputs(const char *);
+#endif //SOC_SIM
+
 extern void _dprintf(const char *, ...);
 
 #ifdef DEBUG

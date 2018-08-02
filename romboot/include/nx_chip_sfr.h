@@ -1,6 +1,8 @@
 #ifndef __NX_CHIP_SFR_H__
 #define __NX_CHIP_SFR_H__
 
+#include "nx_swallow.h"
+
 typedef struct _sfr_info {
 	unsigned int SYSCON[1];
 	unsigned int VIP[1];
@@ -44,6 +46,6 @@ typedef struct _sfr_info {
 	unsigned int CFG_BUS_CFG[1];
 } _SFR_INFO;
 
-extern _SFR_INFO SFR_INFO;
+extern struct _SFR_INFO SFR_INFO;
 
 #endif //__NX_CHIP_SFR_H__

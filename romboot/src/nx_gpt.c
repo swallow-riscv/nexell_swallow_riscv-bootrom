@@ -15,8 +15,8 @@
  */
 
 #include <nx_lib.h>
-#ifdef QEMU_RISCV
-#include <nx_qemu_printf.h>
+#if defined(QEMU_RISCV) || defined(SOC_SIM)
+#include <nx_qemu_sim_printf.h>
 #else
 #include <nx_swallow_printf.h>
 #endif
@@ -153,17 +153,18 @@ unsigned int crc32 (unsigned int crc, const unsigned char *p, unsigned int len)
 // "EFI PART"
 #define GPT_HEADER_SIGNATURE 0x5452415020494645
 
-const unsigned char gpths[] = {
-	0x45, 0x46, 0x49, 0x20, 0x50, 0x41, 0x52, 0x54
-};
 int is_gpt_valid(unsigned char *psector)
 {
 	unsigned int crc_backup;
 	struct gpt_header *gpt = (struct gpt_header *)psector;
-
+        const unsigned char gpths[] = {
+            0x45, 0x46, 0x49, 0x20, 0x50, 0x41, 0x52, 0x54
+        };
 	unsigned char *a = (unsigned char *)&gpt->signature;
 	if (nx_memcmp(a, gpths, 8) != 0) {
+#ifdef DEBUG
 		_dprintf("wrong gpt signature : 0x%x\r\n", gpt->signature);
+#endif
 		return -1;
 	} else {
 //		printf("%s\n", (char *)&gpt->signature);
@@ -173,8 +174,10 @@ int is_gpt_valid(unsigned char *psector)
 
 	unsigned int calcrc = crc32(0, (void *)gpt, gpt->header_size);
 	if (calcrc != crc_backup) {
+#ifdef DEBUG
 		_dprintf("!!!Wrong CRC calc crc : %x, crc : %x\r\n",
 				calcrc, crc_backup);
+#endif
 		return -1;
 	}
 	return 0;

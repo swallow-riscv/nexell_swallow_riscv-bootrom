@@ -8,15 +8,15 @@
 #define NX_CLK_PLL1_FREQ        400
 
 struct NX_PLL_RegisterSet {
-	volatile unsigned int               CTRL;	/* 0x000 */
-	volatile unsigned int               DBG0;	/* 0x004 */
-	volatile unsigned int               _Rev0[2];	/* 0x008 -- 0x00C */
-	volatile unsigned int               CNT[4];	/* 0x010 -- 0x01C */
-	volatile unsigned int               CFG1;	/* 0x020 */
-	volatile unsigned int               _Rev1[3];	/* 0x024 -- 0x02C */
-	volatile unsigned int               CFG2;	/* 0x030 */
-	volatile unsigned int               _Rev2[3];	/* 0x034 -- 0x03C */
-	volatile unsigned int               LOCKINT;	/* 0x040 */
+	volatile unsigned int    CTRL;	/* 0x000 */
+	volatile unsigned int    DBG0;	/* 0x004 */
+	volatile unsigned int    _Rev0[2];	/* 0x008 -- 0x00C */
+	volatile unsigned int    CNT[4];	/* 0x010 -- 0x01C */
+	volatile unsigned int    CFG1;	/* 0x020 */
+	volatile unsigned int    _Rev1[3];	/* 0x024 -- 0x02C */
+	volatile unsigned int    CFG2;	/* 0x030 */
+	volatile unsigned int    _Rev2[3];	/* 0x034 -- 0x03C */
+	volatile unsigned int    LOCKINT;	/* 0x040 */
 };
 struct __nx_cpuif_PLL_CPUIFregmap_struct__ { 
 	const __nx_cpuif_symbol__ CLKOFF; 
@@ -88,6 +88,6 @@ struct __nx_cpuif_PLL_CPUIFregmap_struct__ {
 #define TYPE_PLL_DDR0 TYPE_PLL2555X
 #define TYPE_PLL_DDR1 TYPE_PLL2651X
 
-extern	unsigned int *__PLL_CPUIF_BASEADDR[NUMBER_OF_PLL_CPUIF_MODULE];
+//extern	unsigned int *__PLL_CPUIF_BASEADDR[NUMBER_OF_PLL_CPUIF_MODULE];
 
 #endif /* __NX_PLL_H__ */

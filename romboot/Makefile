@@ -36,25 +36,38 @@ ifeq ($(QEMU),y)
 CFLAGS		+= -DQEMU_RISCV
 endif
 
+ifeq ($(SIM),y)
+CFLAGS		+= -DSOC_SIM
+endif
+
 ifeq ($(DEBUG_GDB), y)
 CFLAGS		+= -g -ggdb
 LDFLAGS		+= -g -ggdb
 endif
 
-SYS_OBJS	 = 	head.o
-
 ifeq ($(QEMU), y)
-SYS_OBJS	+=	nx_qemu_printf.o
+SYS_OBJS	 = 	head_qemu.o
+SYS_OBJS	+=	nx_qemu_sim_printf.o
+else	#not QEMU, REAL
+SYS_OBJS	 = 	head.o
+ifeq ($(SIM), y)
+SYS_OBJS	+=	nx_qemu_sim_printf.o
+#SYS_OBJS	+=	nx_clint_test.o
+#SYS_OBJS	+=	nx_pwmtest.o
 else
-SYS_OBJS	+=	nx_swallow_printf.o \
-			nx_debug.o
+ifeq ($(DEBUG), y)
+SYS_OBJS	+=	nx_swallow_printf.o
+SYS_OBJS	+=	nx_debug.o
 endif
+endif	#SIM
+endif   #QEMU
+
 SYS_OBJS	+=	nx_clock.o \
-			nx_cpuif_regmap.o \
-			nx_chip_sfr.o
+			nx_cpuif_regmap.o
 
+#nx_chip_sfr.o
 
-SYS_OBJS	+= 	iROMBOOT.o iSDBOOT.o
+SYS_OBJS	+= 	iROMBOOT.o iSDBOOT.o iSPIBOOT.o
 SYS_OBJS	+= 	nx_gpio.o nx_gpt.o nx_lib.o
 
 SYS_OBJS_LIST	= 	$(addprefix $(DIR_OBJOUTPUT)/,$(SYS_OBJS))
@@ -76,7 +89,7 @@ $(DIR_OBJOUTPUT)/%.o: src/%.S
 
 
 #all: libs mkobjdir $(SYS_OBJS_LIST) link bin
-all: mkobjdir $(SYS_OBJS_LIST) link bin
+all: mkobjdir $(SYS_OBJS_LIST) link bin hex
 
 mkobjdir:
 ifeq ($(OS),Windows_NT)
@@ -105,6 +118,10 @@ bin:
 	$(Q)echo [binary.... $(PROJECT_NAME).bin]
 	$(Q)$(MAKEBIN) -O binary $(DIR_TARGETOUTPUT)/$(PROJECT_NAME).elf	\
 		$(DIR_TARGETOUTPUT)/$(PROJECT_NAME).bin
+
+hex:
+	$(Q)echo [binary.... $(PROJECT_NAME).hex]
+	perl bin2vhx.pl ${DIR_TARGETOUTPUT}/${PROJECT_NAME}.bin ${DIR_TARGETOUTPUT}/${PROJECT_NAME}.hex
 
 ifeq ($(OS),Windows_NT)
 	$(Q)if exist $(DIR_OBJOUTPUT)			\
